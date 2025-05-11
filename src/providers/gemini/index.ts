@@ -67,7 +67,6 @@ export default class extends Provider {
       },
       async function* (source: Iterable<string>) {
         for await (const chunk of source) {
-          console.log(chunk);
           if (chunk) {
             let targetTxt = "";
             const content = chunk;

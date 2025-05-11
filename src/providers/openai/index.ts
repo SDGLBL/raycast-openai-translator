@@ -91,32 +91,36 @@ export default class extends Provider {
   handleMessage(prompt: Prompt): (source: any) => AsyncGenerator<Message> {
     return async function* (source) {
       for await (const chunk of source) {
-        // console.debug(chunk)
         if (chunk) {
           const { quoteProcessor, meta } = prompt;
           const { isWordMode } = meta;
           let resp;
           try {
-            // console.debug("=====parse=====");
-            // console.debug(chunk.data);
             resp = JSON.parse(chunk.data);
             const { choices } = resp;
             if (!choices || choices.length === 0) {
               console.debug({ error: "No result" });
             } else {
-              const { finish_reason: finishReason } = choices[0];
-              if (finishReason) {
-                yield finishReason;
-              } else {
-                let targetTxt = "";
-                const { content = "", role } = choices[0].delta;
-
-                targetTxt = content ? content : "";
-
+              const choice = choices[0];
+              
+              // Process content first
+              let targetTxt = "";
+              const delta = choice.delta || {};
+              const content = delta.content || "";
+              const role = delta.role;
+              
+              if (content) {
+                targetTxt = content;
                 if (quoteProcessor) {
                   targetTxt = quoteProcessor.processText(targetTxt);
                 }
                 yield { content: targetTxt, role, isWordMode };
+              }
+              
+              // Then check for finish reason
+              const { finish_reason: finishReason } = choice;
+              if (finishReason) {
+                yield finishReason;
               }
             }
           } catch (error) {
@@ -124,7 +128,6 @@ export default class extends Provider {
             yield "stop";
           }
         } else {
-          // TODO: find out why chunk is null
           console.debug("chunk is null");
         }
       }
