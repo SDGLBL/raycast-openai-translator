@@ -20,6 +20,7 @@ import { QueryHook } from "../hooks/useQuery";
 import { detectLang } from "../providers/lang";
 import { TranslateMode, TranslateQuery } from "../providers/types";
 import { DetailView } from "./detail";
+import { DiffView } from "./diff-view";
 import { EmptyView } from "./empty";
 import { getErrorText } from "../providers/utils";
 import { Provider } from "../providers/base";
@@ -291,6 +292,63 @@ export const ContentView = (props: ContentViewProps) => {
           query.updateLangType(query.langType == "To" ? "From" : "To");
         }}
       />
+      {record.mode === "grammar" && (
+        <Action
+          title="Replace Selected Text"
+          icon={Icon.TextCursor}
+          shortcut={{ modifiers: ["cmd", "shift"], key: "r" }}
+          onAction={async () => {
+            const correctedText = record.result.text;
+            await Clipboard.copy(correctedText);
+            await showToast({
+              style: Toast.Style.Success,
+              title: "Text copied to clipboard",
+              message: "Now paste to replace your selection"
+            });
+          }}
+        />
+      )}
+      {record.mode === "grammar" && (
+        <ActionPanel.Submenu 
+          title="Grammar Actions" 
+          icon={Icon.TextDocument} 
+          shortcut={{ modifiers: ["cmd"], key: "k" }}
+        >
+          <Action 
+            title="Copy Corrected Text"
+            icon={Icon.Replace}
+            shortcut={{ modifiers: ["cmd", "ctrl"], key: "c" }}
+            onAction={async () => {
+              const correctedText = record.result.text;
+              await Clipboard.copy(correctedText);
+              await showToast({
+                style: Toast.Style.Success,
+                title: "Corrected text copied to clipboard"
+              });
+            }}
+          />
+          <Action.CopyToClipboard
+            title="Copy Original Text"
+            content={record.result.original}
+            shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+          />
+          <Action 
+            title="Toggle Metadata"
+            icon={showMetadata ? Icon.EyeSlash : Icon.Eye}
+            shortcut={{ modifiers: ["cmd", "ctrl"], key: "m" }}
+            onAction={() => setShowMetadata(!showMetadata)}
+          />
+          <Action 
+            title="Reanalyze Text"
+            icon={Icon.Repeat}
+            shortcut={{ modifiers: ["cmd", "shift"], key: "a" }}
+            onAction={() => {
+              query.updateText(record.result.original);
+              query.updateQuerying(true);
+            }}
+          />
+        </ActionPanel.Submenu>
+      )}
       <ActionPanel.Section title="Copy">
         <Action.CopyToClipboard
           title="Copy Translation"
@@ -377,16 +435,29 @@ export const ContentView = (props: ContentViewProps) => {
             accessories={[{ text: `#${i}` }]}
             actions={getQueryingActionPanel()}
             detail={
-              <DetailView
-                showMetadata={showMetadata}
-                text={translatedText}
-                original={querying ? querying.query.text : ""}
-                from={querying ? querying.query.detectFrom : "auto"}
-                mode={querying ? querying.query.mode : "translate"}
-                ocrImg={query.ocrImage}
-                to={query.to}
-                provider={activeProvider.name}
-              />
+              querying && querying.query.mode === "grammar" ? (
+                <DiffView
+                  showMetadata={showMetadata}
+                  text={translatedText}
+                  original={querying ? querying.query.text : ""}
+                  from={querying ? querying.query.detectFrom : "auto"}
+                  mode={querying ? querying.query.mode : "translate"}
+                  ocrImg={query.ocrImage}
+                  to={query.to}
+                  provider={activeProvider.name}
+                />
+              ) : (
+                <DetailView
+                  showMetadata={showMetadata}
+                  text={translatedText}
+                  original={querying ? querying.query.text : ""}
+                  from={querying ? querying.query.detectFrom : "auto"}
+                  mode={querying ? querying.query.mode : "translate"}
+                  ocrImg={query.ocrImage}
+                  to={query.to}
+                  provider={activeProvider.name}
+                />
+              )
             }
           />
         ) : (
@@ -397,17 +468,31 @@ export const ContentView = (props: ContentViewProps) => {
             accessories={[{ text: `#${i}` }]}
             actions={getRecordActionPanel(item)}
             detail={
-              <DetailView
-                showMetadata={showMetadata}
-                text={item.result.text}
-                original={item.result.original}
-                from={item.result.from}
-                to={item.result.to}
-                mode={item.mode}
-                created_at={item.created_at}
-                ocrImg={item.ocrImg}
-                provider={item.provider}
-              />
+              item.mode === "grammar" ? (
+                <DiffView
+                  showMetadata={showMetadata}
+                  text={item.result.text}
+                  original={item.result.original}
+                  from={item.result.from}
+                  to={item.result.to}
+                  mode={item.mode}
+                  created_at={item.created_at}
+                  ocrImg={item.ocrImg}
+                  provider={item.provider}
+                />
+              ) : (
+                <DetailView
+                  showMetadata={showMetadata}
+                  text={item.result.text}
+                  original={item.result.original}
+                  from={item.result.from}
+                  to={item.result.to}
+                  mode={item.mode}
+                  created_at={item.created_at}
+                  ocrImg={item.ocrImg}
+                  provider={item.provider}
+                />
+              )
             }
           />
         );

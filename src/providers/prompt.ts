@@ -182,6 +182,26 @@ export function generatMetadata(query: TranslateQuery): PromptMetadata {
 }
 
 export const promptBuilders: Record<TranslateMode, PromptBuilder> = {
+  // Grammar and Spelling Correction
+  ["grammar"]: (prompt: Prompt) => {
+    const { quoteProcessor = new QuoteProcessor() } = prompt;
+    const rolePrompt = "You are a professional editor specializing in grammar and spelling correction.";
+    const commandPrompt = `Review the following text for spelling and grammar issues. Make appropriate corrections while preserving the original meaning. For your response, return the full corrected text and ONLY indicate changes using the following tags:
+
+1. <del>text</del> - For words or phrases that should be completely removed
+2. <add>text</add> - For words or phrases that should be newly added
+3. <change>text</change> - For words that are modified or corrected (such as spelling fixes or tense changes)
+
+Do not add any summary or count of changes at the end. If no changes are needed, return the original text without any tags.`;
+
+    if (quoteProcessor) {
+      const contentPrompt = `${quoteProcessor.quoteStart}${prompt.contentPrompt}${quoteProcessor.quoteEnd}`;
+      return { ...prompt, rolePrompt, commandPrompt, contentPrompt, quoteProcessor };
+    }
+
+    return { ...prompt, rolePrompt, commandPrompt };
+  },
+
   // Translate
   ["translate"]: (prompt: Prompt) => {
     let { rolePrompt, commandPrompt, contentPrompt } = prompt;

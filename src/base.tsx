@@ -92,11 +92,44 @@ export default function getBase(
       provider = providerHook?.selected
         ? createProvider(providerHook.selected.type, providerHook.selected.props)
         : undefined;
+      
+      // 如果没有找到选中的 provider
       if (!provider) {
-        launchCommand({
-          name: "provider",
-          type: LaunchType.UserInitiated,
-        });
+        // 如果没有数据，创建一个默认的 provider 用于开发模式
+        if (!providerHook.data || providerHook.data.length === 0) {
+          console.log("Creating default development provider");
+          provider = createProvider("openai", {
+            name: "Default OpenAI",
+            entrypoint: "https://api.openai.com/v1/chat/completions",
+            apikey: "dummy-key", // 开发模式用的占位符
+            apiModel: "gpt-3.5-turbo",
+          });
+          
+          // 不跳转到 provider 页面，在开发时使用默认 provider
+        } else {
+          // 如果有数据但没有选中项，则使用第一个 provider
+          if (providerHook.data && providerHook.data.length > 0) {
+            console.log("Using first provider from list");
+            provider = createProvider(
+              providerHook.data[0].type, 
+              providerHook.data[0].props
+            );
+            
+            // 自动设置选中项，避免下次再次出现该情况
+            setTimeout(() => {
+              providerHook.setSelected(providerHook.data[0]);
+            }, 100);
+          } else {
+            console.log("No providers available, creating default");
+            // 如果没有数据，创建一个默认的 provider
+            provider = createProvider("openai", {
+              name: "Default OpenAI",
+              entrypoint: "https://api.openai.com/v1/chat/completions",
+              apikey: "dummy-key", // 开发模式用的占位符
+              apiModel: "gpt-3.5-turbo",
+            });
+          }
+        }
       }
     }
   } else {
@@ -121,6 +154,7 @@ export default function getBase(
           <LangDropdown
             type={query.langType}
             selectedStandardLang={query.langType == "To" ? query.to : query.from}
+            history={history}
             onLangChange={query.langType == "To" ? query.updateTo : query.updateFrom}
           />
         }

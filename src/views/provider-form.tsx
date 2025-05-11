@@ -190,34 +190,54 @@ export const ProviderForm = (props: ProviderFormProps) => {
   }
 
   function submitForm(values: { customModel: string; entrypoint: string; model: string }) {
-    // check api key
-    if (config.requireApiKey && (!apikey || apikey.length == 0)) {
-      setAPIKeyError("API Key is required");
-      return;
-    }
-    // check if custom model
-    if (isCustomModel && (!values.customModel || values.customModel.length == 0)) {
-      setCustomModelError("Custom Model is required");
-      return;
-    }
+    try {
+      // check api key
+      if (config.requireApiKey && (!apikey || apikey.length == 0)) {
+        setAPIKeyError("API Key is required");
+        return;
+      }
+      // check if custom model
+      if (isCustomModel && (!values.customModel || values.customModel.length == 0)) {
+        setCustomModelError("Custom Model is required");
+        return;
+      }
 
-    if (!checkNameValid(name)) {
-      return;
-    }
+      if (!checkNameValid(name)) {
+        return;
+      }
 
-    hook.addOrUpdate({
-      id: record ? record?.id : uuidv4(),
-      type: providerByConfig(config).value,
-      props: {
-        name: name,
-        apikey: apikey,
-        entrypoint: values.entrypoint || config.defaultEntrypoint,
-        apiModel: isCustomModel ? values.customModel : values.model,
-      },
-      created_at: new Date().toISOString(),
-    });
-    if (onDone) {
-      onDone();
+      console.log("Submitting form with values:", {
+        id: record ? record?.id : uuidv4(),
+        type: providerByConfig(config).value,
+        props: {
+          name: name,
+          apikey: apikey,
+          entrypoint: values.entrypoint || config.defaultEntrypoint,
+          apiModel: isCustomModel ? values.customModel : values.model,
+        },
+      });
+
+      // 直接保存到 hook 而不是等待异步回调
+      hook.addOrUpdate({
+        id: record ? record?.id : uuidv4(),
+        type: providerByConfig(config).value,
+        props: {
+          name: name,
+          apikey: apikey,
+          entrypoint: values.entrypoint || config.defaultEntrypoint,
+          apiModel: isCustomModel ? values.customModel : values.model,
+        },
+        created_at: new Date().toISOString(),
+      });
+
+      // 提交成功后才调用 onDone 回调
+      if (onDone) {
+        setTimeout(() => {
+          onDone();
+        }, 500); // 等待一些时间确保数据已经保存
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
     }
   }
 

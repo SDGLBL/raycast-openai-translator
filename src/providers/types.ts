@@ -1,6 +1,6 @@
 import { SocksProxyAgent } from "socks-proxy-agent";
 
-export type TranslateMode = "translate" | "polishing" | "summarize" | "what";
+export type TranslateMode = "translate" | "polishing" | "summarize" | "what" | "grammar";
 
 export interface TranslateQuery {
   text: string;
